@@ -31,8 +31,8 @@ where
 #[derive(Debug, thiserror::Error)]
 pub enum Kind {
     /// There was an error when trying to parse the TOML config file
-    #[error("Could not parse the config file")]
-    ConfigFileParseError(#[from] toml::de::Error),
+    #[error("Could not load the config file")]
+    ConfigLoadFailed(#[from] irc::error::Error),
     /// Non-specialized IO error
     #[error("I/O error")]
     IoError(#[from] io::Error),

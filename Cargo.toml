@@ -7,8 +7,8 @@ edition = "2018"
 [dependencies]
 clap = "3.0.0-beta.2"
 color-eyre = "0.5"
-irc = "0.15"
-serde = "1.0"
+irc = { version = "0.15", default-features = false, features = ["tls-native", "toml_config"] }
+serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 thiserror = "1"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
@@ -16,6 +16,12 @@ toml = "0.5"
 tracing = "0.1"
 tracing-error = "0.1"
 tracing-subscriber = "0.2"
+
+[features]
+default = ["tls-native"]
+
+tls-native = ["irc/tls-native"]
+tls-rust = ["irc/tls-rust"]
 
 [dev-dependencies]
 tempfile = "3.2.0"

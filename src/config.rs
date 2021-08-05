@@ -1,40 +1,12 @@
-use std::fs::File;
-use std::io::Read;
 use std::path::Path;
 
-use serde::{de::DeserializeOwned, Deserialize};
+use irc::client::data::Config as IrcConfig;
 use tracing::{debug, instrument};
 
 use crate::{Error, Kind};
 
-#[derive(Debug, Deserialize)]
-pub struct Config {
-    /// The client's nickname
-    pub nickname: String,
-    /// The client's username, if not set, `nickname` will be used
-    pub username: Option<String>,
-    /// The client's real name, if not set, `username` will be used
-    pub realname: Option<String>,
-    /// The servers hostname
-    pub server: String,
-    /// The servers port number
-    pub port: Option<u16>,
-    /// A list of channels to join when connection is established
-    pub channels: Vec<String>,
-}
-
-/// Reads the file at `path` and tries to deserialize into `T` as TOML.
-fn read_toml_file<P, T>(path: P) -> Result<T, Error>
-where
-    P: AsRef<Path>,
-    T: DeserializeOwned,
-{
-    let mut buf = String::new();
-    File::open(path)?.read_to_string(&mut buf)?;
-    let res = toml::from_str(&buf).map_err(|e| Error::from(Kind::ConfigFileParseError(e)))?;
-
-    Ok(res)
-}
+#[derive(Debug)]
+pub struct Config(IrcConfig);
 
 impl Config {
     /// Attempts to create a [`Config`] by reading values from environment variables.
@@ -51,9 +23,9 @@ impl Config {
         debug!("Loading config file");
 
         let path = path.as_ref();
-        let config: Config = read_toml_file(path)?;
+        let config = IrcConfig::load(path).map_err(|e| Kind::ConfigLoadFailed(e))?;
 
-        Ok(config)
+        Ok(Config(config))
     }
 }
 
