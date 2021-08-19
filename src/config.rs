@@ -5,7 +5,8 @@ use tracing::{debug, instrument};
 
 use crate::{Error, Kind};
 
-#[derive(Debug)]
+/// An opaque config
+#[derive(Debug, Clone)]
 pub struct Config(IrcConfig);
 
 impl Config {
@@ -26,6 +27,24 @@ impl Config {
         let config = IrcConfig::load(path).map_err(|e| Kind::ConfigLoadFailed(e))?;
 
         Ok(Config(config))
+    }
+
+    /// Returns a string that's useful as a network identifier.
+    ///
+    /// It has the format `<host>:<port>`
+    pub fn identifier(&self) -> String {
+        let cfg = &self.0;
+        let server = cfg.server.clone().unwrap_or("undefined".to_string());
+        let port = cfg.port.unwrap_or(if cfg.use_tls() { 6667 } else { 6697 });
+
+        format!("{}:{}", server, port)
+    }
+}
+
+impl Into<IrcConfig> for Config {
+    /// Returns the inner [`IrcConfig`].
+    fn into(self) -> IrcConfig {
+        self.0
     }
 }
 

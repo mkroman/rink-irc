@@ -2,13 +2,16 @@ use std::env;
 
 use clap::Clap;
 use color_eyre::{eyre::WrapErr, Report};
-use tracing::{debug, instrument};
+use futures::stream::StreamExt;
+use irc::client::prelude::*;
+use tracing::{debug, instrument, trace};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter};
 
 mod cli;
 mod config;
 mod error;
+mod rink;
 
 use config::Config;
 use error::{Error, Kind};
@@ -34,8 +37,21 @@ fn setup() -> Result<(), Report> {
     Ok(())
 }
 
-#[instrument]
+#[instrument(skip(config), fields(id = %config.identifier()))]
 async fn connect(config: Config) -> Result<(), Report> {
+    // Connect to the network
+    let mut client = Client::from_config(config.into()).await?;
+
+    // Register our nickname and user
+    client.identify()?;
+
+    // Start streaming messages
+    let mut stream = client.stream()?;
+
+    while let Some(msg) = stream.next().await.transpose()? {
+        trace!(?msg, "Received IRC message");
+    }
+
     Ok(())
 }
 
@@ -51,6 +67,9 @@ async fn main() -> Result<(), Report> {
     }?;
 
     debug!(?config, "Config loaded");
+
+    debug!("Connecting to network");
+    connect(config).await?;
 
     Ok(())
 }
